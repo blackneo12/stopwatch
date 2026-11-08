@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스탑워치</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --text:#1c1e21; --muted:#7a808a; --accent:#2f6df6; --stop:#e5484d; --line:#e6e8ec; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121316; --card:#1c1e23; --text:#f2f3f5; --muted:#8a909b; --line:#2b2e35; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:var(--bg); color:var(--text); font-family:"Malgun Gothic",system-ui,sans-serif; padding:16px; }
+  .card { width:100%; max-width:420px; background:var(--card); border-radius:20px; padding:28px 24px;
+          box-shadow:0 8px 30px rgba(0,0,0,.08); }
+  .time { font-size:clamp(40px,12vw,60px); font-weight:700; text-align:center;
+          font-variant-numeric:tabular-nums; letter-spacing:1px; margin:8px 0 24px; }
+  .time small { font-size:.55em; color:var(--muted); }
+  .btns { display:flex; gap:12px; }
+  button { flex:1; padding:14px; font-size:16px; font-weight:600; border:0; border-radius:12px;
+           cursor:pointer; color:#fff; background:var(--accent); font-family:inherit; }
+  button.secondary { background:transparent; color:var(--text); border:1px solid var(--line); }
+  button.stop { background:var(--stop); }
+  button:disabled { opacity:.4; cursor:default; }
+  ul { list-style:none; padding:0; margin:20px 0 0; max-height:240px; overflow-y:auto; }
+  li { display:flex; justify-content:space-between; padding:10px 4px; border-bottom:1px solid var(--line);
+       font-variant-numeric:tabular-nums; }
+  li span:first-child { color:var(--muted); }
+  .hint { text-align:center; color:var(--muted); font-size:12px; margin-top:16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="time" id="time">00:00:00<small>.00</small></div>
+  <div class="btns">
+    <button id="lapBtn" class="secondary" disabled>랩</button>
+    <button id="startBtn">시작</button>
+  </div>
+  <ul id="laps"></ul>
+  <div class="hint">단축키: 스페이스 = 시작/정지 · L = 랩 · R = 초기화</div>
+</div>
+<script>
+  const timeEl = document.getElementById('time'), startBtn = document.getElementById('startBtn'),
+        lapBtn = document.getElementById('lapBtn'), lapsEl = document.getElementById('laps');
+  let running = false, startTs = 0, elapsed = 0, raf, laps = [], lastLap = 0;
+
+  const pad = (n, l = 2) => String(n).padStart(l, '0');
+  function fmt(ms) {
+    const cs = Math.floor(ms / 10) % 100, s = Math.floor(ms / 1000) % 60,
+          m = Math.floor(ms / 60000) % 60, h = Math.floor(ms / 3600000);
+    return { main: `${pad(h)}:${pad(m)}:${pad(s)}`, cs: pad(cs) };
+  }
+  function render() {
+    const t = fmt(running ? elapsed + performance.now() - startTs : elapsed);
+    timeEl.innerHTML = `${t.main}<small>.${t.cs}</small>`;
+  }
+  function loop() { render(); raf = requestAnimationFrame(loop); }
+
+  function toggle() {
+    if (running) {
+      elapsed += performance.now() - startTs; running = false; cancelAnimationFrame(raf); render();
+      startBtn.textContent = '계속'; startBtn.classList.remove('stop'); lapBtn.textContent = '초기화';
+    } else {
+      startTs = performance.now(); running = true; loop();
+      startBtn.textContent = '정지'; startBtn.classList.add('stop'); lapBtn.textContent = '랩'; lapBtn.disabled = false;
+    }
+  }
+  function lapOrReset() {
+    if (running) {
+      const now = elapsed + performance.now() - startTs, split = now - lastLap; lastLap = now;
+      laps.unshift({ n: laps.length + 1, split, total: now });
+      const li = document.createElement('li');
+      const s = fmt(split), t = fmt(now);
+      li.innerHTML = `<span>랩 ${laps[0].n}</span><span>+${s.main}.${s.cs}</span><span>${t.main}.${t.cs}</span>`;
+      lapsEl.prepend(li);
+    } else if (elapsed > 0) {
+      elapsed = 0; lastLap = 0; laps = []; lapsEl.innerHTML = ''; render();
+      startBtn.textContent = '시작'; lapBtn.textContent = '랩'; lapBtn.disabled = true;
+    }
+  }
+  startBtn.onclick = toggle; lapBtn.onclick = lapOrReset;
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.key.toLowerCase() === 'l' && running) lapOrReset();
+    else if (e.key.toLowerCase() === 'r' && !running) lapOrReset();
+  });
+</script>
+</body>
+</html>

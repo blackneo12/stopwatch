@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>크리스마스 스탑워치</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.0/dist/galmuri.css">
+<style>
+  :root { --bg:#0d1b2a; --panel:#16283d; --ink:#f8f4e8; --red:#d7263d; --red-d:#8f1526; --green:#2e9b4a; --green-d:#1b6130;
+          --gold:#ffd23f; --muted:#8fa6c0; --line:#050c14; }
+  * { box-sizing:border-box; }
+  html { image-rendering:pixelated; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         background:var(--bg); color:var(--ink); font-family:"Galmuri11","Galmuri9","Malgun Gothic",monospace; overflow-x:hidden; }
+  #snow { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; image-rendering:pixelated; z-index:0; }
+  .card { position:relative; z-index:1; width:100%; max-width:440px; background:var(--panel); padding:22px 20px 18px;
+          border:4px solid var(--line);
+          border-color:var(--gold);
+          box-shadow:0 0 0 4px var(--red), 0 0 0 8px var(--line),
+                     0 0 14px 6px rgba(255,210,63,.55), 0 0 36px 12px rgba(215,38,61,.35);
+          animation:glow 2.4s ease-in-out infinite alternate; }
+  @keyframes glow {
+    from { box-shadow:0 0 0 4px var(--red), 0 0 0 8px var(--line), 0 0 10px 4px rgba(255,210,63,.4), 0 0 24px 8px rgba(215,38,61,.25); }
+    to   { box-shadow:0 0 0 4px var(--red), 0 0 0 8px var(--line), 0 0 20px 8px rgba(255,210,63,.75), 0 0 48px 16px rgba(215,38,61,.45); }
+  }
+  .title { text-align:center; font-family:"Press Start 2P",monospace; font-size:13px; color:var(--gold); letter-spacing:1px; margin:0 0 4px; text-shadow:2px 2px 0 var(--red-d); }
+  .sub { text-align:center; color:var(--muted); font-size:12px; margin-bottom:6px; }
+  .tabs { display:flex; gap:10px; padding:0 4px; }
+  .tab { font-size:14px; padding:10px 4px; background:#243a52; box-shadow:inset -4px -4px 0 #16283d, inset 4px 4px 0 rgba(255,255,255,.15); color:var(--muted); }
+  .tab.active { background:var(--red); color:#fff; box-shadow:inset -4px -4px 0 var(--red-d), inset 4px 4px 0 rgba(255,255,255,.3), 0 0 10px 2px rgba(255,210,63,.5); }
+  .panel[hidden] { display:none; }
+  .time.cd { margin-bottom:6px; letter-spacing:2px; }
+  .cdlabels { display:flex; justify-content:space-around; padding:0 14px; font-size:12px; color:var(--muted); }
+  .cdlabels span { width:25%; text-align:center; }
+  .dday { text-align:center; margin:18px 4px 8px; padding:22px 6px; background:#06101b; border:4px solid var(--line);
+          outline:4px solid var(--red); box-shadow:0 0 10px 4px rgba(215,38,61,.5); }
+  .dday b { display:block; font-family:"Press Start 2P",monospace; font-size:clamp(18px,5.6vw,24px); color:var(--gold);
+            text-shadow:3px 3px 0 var(--red-d); margin-bottom:8px; }
+  .dday span { font-size:12px; color:var(--muted); }
+  #tree { display:block; margin:6px auto 10px; width:100%; max-width:384px; height:auto; image-rendering:pixelated; }
+  .time { font-family:"Press Start 2P",monospace; font-size:clamp(20px,6.4vw,30px); text-align:center; background:#06101b;
+          border:4px solid var(--line); outline:4px solid var(--green); padding:18px 6px; margin:14px 4px 20px;
+          box-shadow:0 0 12px 6px rgba(46,155,74,.6);
+          color:var(--ink); text-shadow:3px 3px 0 var(--red-d); white-space:nowrap; }
+  .time small { font-size:.6em; color:var(--gold); text-shadow:2px 2px 0 var(--red-d); }
+  .btns { display:flex; gap:14px; padding:0 4px; }
+  button { flex:1; font-family:inherit; font-size:16px; font-weight:700; color:#fff; padding:13px 6px; cursor:pointer;
+           background:var(--green); border:4px solid var(--line);
+           box-shadow:inset -4px -4px 0 var(--green-d), inset 4px 4px 0 rgba(255,255,255,.3); }
+  button:active { transform:translate(2px,2px); }
+  button.stop { background:var(--red); box-shadow:inset -4px -4px 0 var(--red-d), inset 4px 4px 0 rgba(255,255,255,.3); }
+  button.secondary { background:#3b5573; box-shadow:inset -4px -4px 0 #243a52, inset 4px 4px 0 rgba(255,255,255,.25); }
+  button:disabled { opacity:.45; cursor:default; transform:none; }
+  ul { list-style:none; margin:18px 4px 0; padding:0; max-height:200px; overflow-y:auto; }
+  li { display:flex; justify-content:space-between; gap:8px; padding:8px 6px; font-size:13px; border-bottom:4px dotted #2a4260; }
+  li span:first-child { color:var(--gold); }
+  li span:nth-child(2) { color:#7ee08f; }
+  .hint { text-align:center; color:var(--muted); font-size:11px; margin-top:14px; }
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<div class="card">
+  <h1 class="title">XMAS WATCH</h1>
+  <div class="sub">메리 크리스마스!</div>
+  <canvas id="tree"></canvas>
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tabWatch" role="tab" aria-selected="true" data-tab="watch">⏱ 스탑워치</button>
+    <button class="tab" id="tabDday" role="tab" aria-selected="false" data-tab="dday">🎄 카운트다운</button>
+  </div>
+  <section class="panel" id="panel-watch">
+    <div class="time" id="time">00:00:00<small>.00</small></div>
+    <div class="btns">
+      <button id="lapBtn" class="secondary" disabled>랩</button>
+      <button id="startBtn">시작</button>
+    </div>
+    <ul id="laps"></ul>
+    <div class="hint">스페이스 = 시작/정지 · L = 랩 · R = 초기화</div>
+  </section>
+  <section class="panel" id="panel-dday" hidden>
+    <div class="time cd" id="cdClock">00:00:00:00</div>
+    <div class="cdlabels"><span>일</span><span>시간</span><span>분</span><span>초</span></div>
+    <div class="dday"><b id="ddayMain">D-0</b><span id="ddaySub"></span></div>
+    <div class="hint">크리스마스(12월 25일)까지 남은 시간</div>
+  </section>
+</div>
+
+<script>
+/* ---------- 픽셀 트리 ---------- */
+const TREE = [
+  "......Y......",
+  ".....YYY.....",
+  "......G......",
+  ".....GGG.....",
+  "....GGLGG....",
+  ".....GGG.....",
+  "....GGGGG....",
+  "...GLGGGLG...",
+  "....GGGGG....",
+  "...GGGGGGG...",
+  "..GGLGGGGLG..",
+  ".GGGGGGLGGGG.",
+  "..GGGGGGGGG..",
+  ".GGGLGGGGGLG.",
+  "GGGGGGGLGGGGG",
+  "......K......",
+  "......K......"
+];
+const PAL = { R:'#d7263d', r:'#8f1526', Y:'#ffd23f', y:'#c99a14', B:'#3a86ff', b:'#1f4fa8', W:'#f8f4e8', w:'#b9b4a3',
+  P:'#9b5de5', p:'#5e2f96', G:'#2e9b4a', g:'#1b6130', K:'#7a4a21', k:'#4e2d12', S:'#f1c27d', H:'#5a3418',
+  C:'#4cc9f0', c:'#2a8fb0', X:'#1a1a1a', O:'#ff8fab', o:'#c9506f' };
+
+/* 선물상자 스프라이트 (리본·매듭·그림자 포함) */
+const GIFT_A = ["..YY.YY..", ".Y..Y..Y.", "..YYYYY..", "RRRRYRRRr", "RRRRYRRRr", "YYYYYYYYy", "RRRRYRRRr", "rrrryrrrr"];
+const GIFT_B = [".WW.WW.", "..WWW..", "BBBWBBb", "BBBWBBb", "WWWWWWw", "bbbWbbb"];
+const GIFT_C = [".Y..Y.", "..YY..", "PPYYPp", "PPYYPp", "YYYYYy", "PPYYPp", "ppyypp"];
+const GIFT_D = [".R.R.", "..R..", "GGRGg", "GGRGg", "ggRgg"];
+const GIFT_F = ["OYOO", "OYOo", "YYYy", "ooYo"];
+const GIFT_HELD = [".Y.Y.", "..Y..", "CCYCC", "CCYCc", "ccYcc"];
+
+/* 아이 스프라이트 (빨간 모자, 두 가지 걸음 프레임) */
+const CH_W = 11, CH_H = 15;
+const CHILD_BODY = ["..WW...", ".RRRR..", "RRRRRR.", "WWWWWWW", ".HSSSS.", ".HSSXS.", ".HSSSS.", "..SSS..",
+                    ".GGGGG.", ".GGGGGS", ".GGGGGS", ".GGGGG."];
+const CHILD_LEGS = [[".bb.bb.", ".bb.bb.", ".XX.XX."], ["..bbb..", "..bbb..", "..XXX.."]];
+function composeChild(frame) {
+  const g = Array.from({ length: CH_H }, () => Array(CH_W).fill('.'));
+  [...CHILD_BODY, ...CHILD_LEGS[frame]].forEach((row, y) => [...row].forEach((c, x) => g[y][x] = c));
+  GIFT_HELD.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') g[7 + y][6 + x] = c; }));
+  return g.map(r => r.join(''));
+}
+const CHILD_FRAMES = [composeChild(0), composeChild(1)];
+
+/* ---------- 장면 (트리 + 선물 + 눈 덮인 바닥 + 지나가는 아이) ---------- */
+const treeCv = document.getElementById('tree'), tctx = treeCv.getContext('2d'), S = 4;
+const SW = 96, SH = 19, GROUND = 17, TX = 41;
+treeCv.width = SW * S; treeCv.height = SH * S;
+const lightCols = ['#d7263d', '#ffd23f', '#4cc9f0', '#ff8fab'];
+function drawSprite(rows, ox, oy, flip = false, light = null) {
+  const wd = rows[0].length;
+  rows.forEach((row, y) => [...row].forEach((c, x) => {
+    if (c === '.') return;
+    tctx.fillStyle = (c === 'L' && light) ? light(c) : PAL[c];
+    tctx.fillRect((flip ? ox + wd - 1 - x : ox + x) * S, (oy + y) * S, S, S);
+  }));
+}
+function drawGround() {
+  tctx.fillStyle = '#f8f4e8'; tctx.fillRect(0, GROUND * S, SW * S, S);
+  tctx.fillStyle = '#b9d0e6'; tctx.fillRect(0, (GROUND + 1) * S, SW * S, S);
+  tctx.fillStyle = '#f8f4e8';
+  for (let x = 0; x < SW; x++) if ((x * 13 + 5) % 17 < 2) tctx.fillRect(x * S, (GROUND - 1) * S, S, S);
+}
+let childStart = performance.now() + 5000, childDir = 1;  // 첫 등장 5초 후, 이후 30초마다
+const CH_SPEED = 14, CH_X0 = TX + 6 - Math.floor(CH_W / 2), CH_TRAVEL = 56, CH_TRAVEL_MS = CH_TRAVEL / CH_SPEED * 1000;
+function drawScene(now) {
+  tctx.clearRect(0, 0, treeCv.width, treeCv.height);
+  drawGround();
+  const blink = Math.floor(now / 500); let li = 0;
+  drawSprite(TREE, TX, 0, false, () => lightCols[(li++ + blink) % lightCols.length]);
+  while (now >= childStart + CH_TRAVEL_MS) { childStart += 30000; childDir *= -1; }
+  drawSprite(GIFT_A, 29, GROUND - GIFT_A.length);
+  drawSprite(GIFT_B, 39, GROUND - GIFT_B.length);
+  drawSprite(GIFT_C, 51, GROUND - GIFT_C.length);
+  drawSprite(GIFT_D, 58, GROUND - GIFT_D.length);
+  drawSprite(GIFT_F, 64, GROUND - GIFT_F.length);
+  if (now >= childStart) {   // 선물 상자는 그대로 두고, 아이가 선물을 들고 트리 밑에서 걸어 나감
+    const t = (now - childStart) / 1000, pos = t * CH_SPEED;
+    const x = Math.round(childDir === 1 ? CH_X0 + pos : CH_X0 - pos);
+    drawSprite(CHILD_FRAMES[Math.floor(t * 6) % 2], x, GROUND - CH_H + 1, childDir === -1);
+  }
+}
+
+/* ---------- 픽셀 눈 ---------- */
+const sc = document.getElementById('snow'), sx = sc.getContext('2d');
+let flakes = [];
+function resize() { sc.width = innerWidth; sc.height = innerHeight; }
+resize(); addEventListener('resize', resize);
+for (let i = 0; i < 70; i++) flakes.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+  s: Math.random() < .3 ? 6 : 4, v: .4 + Math.random() * 1.0, d: Math.random() * 6.28 });
+(function snow() {
+  drawScene(performance.now());
+  sx.clearRect(0, 0, sc.width, sc.height);
+  sx.fillStyle = '#f8f4e8';
+  for (const f of flakes) {
+    f.y += f.v; f.d += .02; f.x += Math.sin(f.d) * .5;
+    if (f.y > sc.height) { f.y = -8; f.x = Math.random() * sc.width; }
+    sx.fillRect(Math.round(f.x / 2) * 2, Math.round(f.y / 2) * 2, f.s, f.s);
+  }
+  requestAnimationFrame(snow);
+})();
+
+/* ---------- 크리스마스 D-day ---------- */
+const cdClock = document.getElementById('cdClock'), ddayMain = document.getElementById('ddayMain'), ddaySub = document.getElementById('ddaySub');
+function updateDday() {
+  const now = new Date();
+  const xmas = new Date(now.getFullYear(), 11, 25);   // 새해(1/1)가 되면 그 해 크리스마스로 자동 전환
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((xmas - today) / 86400000);
+  const p2 = n => String(n).padStart(2, '0');
+  const yy = String(xmas.getFullYear()).slice(-2);
+  if (days <= 0) {
+    cdClock.textContent = '00:00:00:00';
+    ddayMain.textContent = days === 0 ? 'D-DAY!' : `D+${-days}`;
+    ddaySub.textContent = days === 0 ? '🎄 메리 크리스마스! 🎅' : `~${yy}.12.25`;
+    return;
+  }
+  const left = xmas - now, d = Math.floor(left / 86400000), h = Math.floor(left / 3600000) % 24,
+        m = Math.floor(left / 60000) % 60, s = Math.floor(left / 1000) % 60;
+  cdClock.textContent = `${p2(d)}:${p2(h)}:${p2(m)}:${p2(s)}`;
+  ddayMain.textContent = `D-${days}`;
+  ddaySub.textContent = `~${yy}.12.25`;
+}
+updateDday(); setInterval(updateDday, 1000);
+
+/* ---------- 스탑워치 ---------- */
+const timeEl = document.getElementById('time'), startBtn = document.getElementById('startBtn'),
+      lapBtn = document.getElementById('lapBtn'), lapsEl = document.getElementById('laps');
+let running = false, startTs = 0, elapsed = 0, raf, lapCount = 0, lastLap = 0;
+const pad = n => String(n).padStart(2, '0');
+function fmt(ms) {
+  return { main: `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)}`,
+           cs: pad(Math.floor(ms / 10) % 100) };
+}
+function render() {
+  const t = fmt(running ? elapsed + performance.now() - startTs : elapsed);
+  timeEl.innerHTML = `${t.main}<small>.${t.cs}</small>`;
+}
+function loop() { render(); raf = requestAnimationFrame(loop); }
+function toggle() {
+  if (running) {
+    elapsed += performance.now() - startTs; running = false; cancelAnimationFrame(raf); render();
+    startBtn.textContent = '계속'; startBtn.classList.remove('stop'); lapBtn.textContent = '초기화';
+  } else {
+    startTs = performance.now(); running = true; loop();
+    startBtn.textContent = '정지'; startBtn.classList.add('stop'); lapBtn.textContent = '랩'; lapBtn.disabled = false;
+  }
+}
+function lapOrReset() {
+  if (running) {
+    const now = elapsed + performance.now() - startTs, split = now - lastLap; lastLap = now;
+    const s = fmt(split), t = fmt(now), li = document.createElement('li');
+    li.innerHTML = `<span>🎁 ${++lapCount}</span><span>+${s.main}.${s.cs}</span><span>${t.main}.${t.cs}</span>`;
+    lapsEl.prepend(li);
+  } else if (elapsed > 0) {
+    elapsed = 0; lastLap = 0; lapCount = 0; lapsEl.innerHTML = ''; render();
+    startBtn.textContent = '시작'; lapBtn.textContent = '랩'; lapBtn.disabled = true;
+  }
+}
+startBtn.onclick = toggle; lapBtn.onclick = lapOrReset;
+/* ---------- 탭 전환 ---------- */
+let currentTab = 'watch';
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  currentTab = btn.dataset.tab;
+  document.querySelectorAll('.tab').forEach(b => {
+    const on = b === btn; b.classList.toggle('active', on); b.setAttribute('aria-selected', on);
+  });
+  document.getElementById('panel-watch').hidden = currentTab !== 'watch';
+  document.getElementById('panel-dday').hidden = currentTab !== 'dday';
+  btn.blur();
+}));
+
+document.addEventListener('keydown', e => {
+  if (currentTab !== 'watch') return;
+  if (e.code === 'Space') { e.preventDefault(); toggle(); }
+  else if (e.key.toLowerCase() === 'l' && running) lapOrReset();
+  else if (e.key.toLowerCase() === 'r' && !running) lapOrReset();
+});
+</script>
+</body>
+</html>
