@@ -31,14 +31,17 @@
   .tab { font-size:14px; padding:10px 4px; background:#243a52; box-shadow:inset -4px -4px 0 #16283d, inset 4px 4px 0 rgba(255,255,255,.15); color:var(--muted); }
   .tab.active { background:var(--red); color:#fff; box-shadow:inset -4px -4px 0 var(--red-d), inset 4px 4px 0 rgba(255,255,255,.3), 0 0 10px 2px rgba(255,210,63,.5); }
   .panel[hidden] { display:none; }
-  .time.cd { margin-bottom:6px; letter-spacing:2px; }
+  .time.cd { margin:20px 4px 6px; letter-spacing:0; font-size:clamp(13px,5vw,24px); }
   .cdlabels { display:flex; justify-content:space-around; padding:0 14px; font-size:12px; color:var(--muted); }
   .cdlabels span { width:25%; text-align:center; }
-  .dday { text-align:center; margin:18px 4px 8px; padding:22px 6px; background:#06101b; border:4px solid var(--line);
+  .dday { text-align:center; margin:18px 4px 0; padding:22px 6px; background:#06101b; border:4px solid var(--line);
           outline:4px solid var(--red); box-shadow:0 0 10px 4px rgba(215,38,61,.5); }
-  .dday b { display:block; font-family:"Press Start 2P",monospace; font-size:clamp(18px,5.6vw,24px); color:var(--gold);
-            text-shadow:3px 3px 0 var(--red-d); margin-bottom:8px; }
-  .dday span { font-size:12px; color:var(--muted); }
+  .dday { white-space:nowrap; font-size:clamp(13px,5vw,24px); height:75px; padding-top:0; padding-bottom:0;
+          display:flex; align-items:center; justify-content:center; }
+  .dday i, .dday b { font-family:"Press Start 2P",monospace; font-style:normal; font-weight:400; }
+  .dday i { color:var(--ink); text-shadow:2px 2px 0 var(--red-d); }
+  .dday b { color:var(--gold); text-shadow:2px 2px 0 var(--red-d); }
+  .dday #ddayLine { font-family:"Galmuri11","Galmuri9","Malgun Gothic",monospace; color:var(--ink); }
   #tree { display:block; margin:6px auto 10px; width:100%; max-width:384px; height:auto; image-rendering:pixelated; }
   .time { font-family:"Press Start 2P",monospace; font-size:clamp(20px,6.4vw,30px); text-align:center; background:#06101b;
           border:4px solid var(--line); outline:4px solid var(--green); padding:18px 6px; margin:14px 4px 20px;
@@ -80,9 +83,9 @@
     <div class="hint">스페이스 = 시작/정지 · L = 랩 · R = 초기화</div>
   </section>
   <section class="panel" id="panel-dday" hidden>
+    <div class="dday"><span id="ddayLine"></span></div>
     <div class="time cd" id="cdClock">00:00:00:00</div>
     <div class="cdlabels"><span>일</span><span>시간</span><span>분</span><span>초</span></div>
-    <div class="dday"><b id="ddayMain">D-0</b><span id="ddaySub"></span></div>
     <div class="hint">크리스마스(12월 25일)까지 남은 시간</div>
   </section>
 </div>
@@ -131,19 +134,39 @@ function composeChild(frame) {
   GIFT_HELD.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') g[7 + y][6 + x] = c; }));
   return g.map(r => r.join(''));
 }
-const CHILD_FRAMES = [composeChild(0), composeChild(1)];
+const CHILD_FRAMES = [composeChild(0), composeChild(1)];   // 선물 든 걷기
+
+/* 빈손 걷기 / 쪼그려 앉기 / 일어나며 선물 들기 */
+function composeFrame(body, gift = null, giftRow = 0, giftOver = false) {
+  const g = Array.from({ length: body.length }, () => Array(CH_W).fill('.'));
+  const putGift = () => gift.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') g[giftRow + y][6 + x] = c; }));
+  if (gift && !giftOver) putGift();
+  body.forEach((row, y) => [...row.padEnd(CH_W, '.')].forEach((c, x) => { if (c !== '.') g[y][x] = c; }));
+  if (gift && giftOver) putGift();
+  return g.map(r => r.join(''));
+}
+const EMPTY_BODY = CHILD_BODY.map((r, i) => (i === 9 || i === 10) ? '.GGGGG.' : r);
+const EMPTY_FRAMES = CHILD_LEGS.map(legs => composeFrame([...EMPTY_BODY, ...legs]));
+const HALF_BODY = ["..WW...", ".RRRR..", "RRRRRR.", "WWWWWWW", ".HSSSS.", ".HSSXS.", ".HSSSS.", "..SSS..",
+                   ".GGGGGS", ".GGGGGS", ".bbbbb.", ".XX.XX."];
+const FULL_BODY = ["..WW...", ".RRRR..", "RRRRRR.", "WWWWWWW", ".HSSXS.", ".HSSSS.", ".GGGGGS", ".GGGGGS", ".bbbbbb", ".XXXXXX"];
+const HALF_EMPTY = composeFrame(HALF_BODY);
+const FULL_GROUND = composeFrame(FULL_BODY, GIFT_HELD, 5, false);   // 쪼그려 앉아 바닥의 선물을 잡음
+const HALF_HELD = composeFrame(HALF_BODY, GIFT_HELD, 6, true);      // 선물을 안고 일어서는 중
 
 /* ---------- 장면 (트리 + 선물 + 눈 덮인 바닥 + 지나가는 아이) ---------- */
 const treeCv = document.getElementById('tree'), tctx = treeCv.getContext('2d'), S = 4;
 const SW = 96, SH = 19, GROUND = 17, TX = 41;
 treeCv.width = SW * S; treeCv.height = SH * S;
 const lightCols = ['#d7263d', '#ffd23f', '#4cc9f0', '#ff8fab'];
-function drawSprite(rows, ox, oy, flip = false, light = null) {
+function drawSprite(rows, ox, oy, flip = false, light = null, hideAt = null) {
   const wd = rows[0].length;
   rows.forEach((row, y) => [...row].forEach((c, x) => {
     if (c === '.') return;
+    const px = flip ? ox + wd - 1 - x : ox + x;
+    if (hideAt && hideAt(px)) return;   // 트리 뒤에 가려진 부분은 그리지 않음
     tctx.fillStyle = (c === 'L' && light) ? light(c) : PAL[c];
-    tctx.fillRect((flip ? ox + wd - 1 - x : ox + x) * S, (oy + y) * S, S, S);
+    tctx.fillRect(px * S, (oy + y) * S, S, S);
   }));
 }
 function drawGround() {
@@ -152,23 +175,49 @@ function drawGround() {
   tctx.fillStyle = '#f8f4e8';
   for (let x = 0; x < SW; x++) if ((x * 13 + 5) % 17 < 2) tctx.fillRect(x * S, (GROUND - 1) * S, S, S);
 }
-let childStart = performance.now() + 5000, childDir = 1;  // 첫 등장 5초 후, 이후 30초마다
-const CH_SPEED = 14, CH_X0 = TX + 6 - Math.floor(CH_W / 2), CH_TRAVEL = 56, CH_TRAVEL_MS = CH_TRAVEL / CH_SPEED * 1000;
+/* 픽셀 장면 안에서 내리는 눈 (바닥에 닿으면 다시 위에서 시작) */
+const sceneFlakes = Array.from({ length: 17 }, () => ({
+  x: Math.random() * SW, y: Math.random() * GROUND, v: 2.5 + Math.random() * 3.5,
+  d: Math.random() * 6.28, c: Math.random() < .35 ? '#b9d0e6' : '#f8f4e8' }));
+let lastSceneTs = performance.now();
+function drawSceneSnow(now) {
+  const dt = Math.min((now - lastSceneTs) / 1000, .1); lastSceneTs = now;
+  for (const f of sceneFlakes) {
+    f.y += f.v * dt; f.d += dt * 2;
+    if (f.y >= GROUND) { f.y = -1; f.x = Math.random() * SW; }
+    tctx.fillStyle = f.c;
+    tctx.fillRect(Math.round(f.x + Math.sin(f.d) * .8) * S, Math.floor(f.y) * S, S, S);
+  }
+}
+let childStart = performance.now() + 5000, childDir = 1;  // 첫 등장 5초 후, 이후 15초마다
+const CH_SPEED = 16, CH_SQUAT = 1.2, CH_STOP = { 1: 18, '-1': 69 };   // 트리 옆 선물 앞에서 멈추는 위치
+const CH_TRAVEL_MS = ((SW + CH_W) / CH_SPEED + CH_SQUAT) * 1000;       // 한쪽 끝 → 선물 줍기 → 반대쪽 끝
 function drawScene(now) {
   tctx.clearRect(0, 0, treeCv.width, treeCv.height);
   drawGround();
   const blink = Math.floor(now / 500); let li = 0;
   drawSprite(TREE, TX, 0, false, () => lightCols[(li++ + blink) % lightCols.length]);
-  while (now >= childStart + CH_TRAVEL_MS) { childStart += 30000; childDir *= -1; }
+  drawSceneSnow(now);
+  while (now >= childStart + CH_TRAVEL_MS) { childStart += 15000; childDir *= -1; }
   drawSprite(GIFT_A, 29, GROUND - GIFT_A.length);
   drawSprite(GIFT_B, 39, GROUND - GIFT_B.length);
   drawSprite(GIFT_C, 51, GROUND - GIFT_C.length);
   drawSprite(GIFT_D, 58, GROUND - GIFT_D.length);
   drawSprite(GIFT_F, 64, GROUND - GIFT_F.length);
   if (now >= childStart) {   // 선물 상자는 그대로 두고, 아이가 선물을 들고 트리 밑에서 걸어 나감
-    const t = (now - childStart) / 1000, pos = t * CH_SPEED;
-    const x = Math.round(childDir === 1 ? CH_X0 + pos : CH_X0 - pos);
-    drawSprite(CHILD_FRAMES[Math.floor(t * 6) % 2], x, GROUND - CH_H + 1, childDir === -1);
+    const t = (now - childStart) / 1000, d = childDir, step = Math.floor(t * 6) % 2;
+    const from = d === 1 ? -CH_W : SW, stop = CH_STOP[d];
+    const tIn = Math.abs(stop - from) / CH_SPEED, tOut = tIn + CH_SQUAT;
+    let x, rows;
+    if (t < tIn) {                       // 1) 빈손으로 화면 끝에서 걸어 들어옴
+      x = from + d * t * CH_SPEED; rows = EMPTY_FRAMES[step];
+    } else if (t < tOut) {               // 2) 선물 앞에서 앉았다 → 선물을 안고 일어남
+      const s = t - tIn; x = stop;
+      rows = s < 0.25 ? HALF_EMPTY : s < 0.85 ? FULL_GROUND : HALF_HELD;
+    } else {                             // 3) 선물을 들고 반대쪽 끝으로 걸어감
+      x = stop + d * (t - tOut) * CH_SPEED; rows = CHILD_FRAMES[step];
+    }
+    drawSprite(rows, Math.round(x), GROUND - rows.length + 1, d === -1);
   }
 }
 
@@ -192,7 +241,7 @@ for (let i = 0; i < 70; i++) flakes.push({ x: Math.random() * innerWidth, y: Mat
 })();
 
 /* ---------- 크리스마스 D-day ---------- */
-const cdClock = document.getElementById('cdClock'), ddayMain = document.getElementById('ddayMain'), ddaySub = document.getElementById('ddaySub');
+const cdClock = document.getElementById('cdClock'), ddayLine = document.getElementById('ddayLine');
 function updateDday() {
   const now = new Date();
   const xmas = new Date(now.getFullYear(), 11, 25);   // 새해(1/1)가 되면 그 해 크리스마스로 자동 전환
@@ -202,15 +251,13 @@ function updateDday() {
   const yy = String(xmas.getFullYear()).slice(-2);
   if (days <= 0) {
     cdClock.textContent = '00:00:00:00';
-    ddayMain.textContent = days === 0 ? 'D-DAY!' : `D+${-days}`;
-    ddaySub.textContent = days === 0 ? '🎄 메리 크리스마스! 🎅' : `~${yy}.12.25`;
+    ddayLine.innerHTML = `<i>${yy}.12.25</i>까지 <b>${days === 0 ? 'D-DAY!' : 'D+' + (-days)}</b>`;
     return;
   }
   const left = xmas - now, d = Math.floor(left / 86400000), h = Math.floor(left / 3600000) % 24,
         m = Math.floor(left / 60000) % 60, s = Math.floor(left / 1000) % 60;
   cdClock.textContent = `${p2(d)}:${p2(h)}:${p2(m)}:${p2(s)}`;
-  ddayMain.textContent = `D-${days}`;
-  ddaySub.textContent = `~${yy}.12.25`;
+  ddayLine.innerHTML = `<i>${yy}.12.25</i>까지 <b>D-${days}</b>`;
 }
 updateDday(); setInterval(updateDday, 1000);
 
